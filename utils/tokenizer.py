@@ -5,12 +5,12 @@ def get_preprocessed_type(dataset_id, tokenizer, split):
     dataset = datasets.load_dataset(dataset_id, split=split)
 
     prompt = (
-        f"Give a short commit message for code from git diff with type_{{type}}:\n{{diff}}\n---\nShort commit message:\n"
+        f"### Câu hỏi:\n{{instruction}}\n\n### Trả lời:\n"
     )
 
     def apply_prompt_template(sample):
         return {
-            "prompt": prompt.format(type=sample["type"], diff=sample["diff"]),
+            "prompt": prompt.format(instruction=sample["question"]),
             "message": sample["msg"],
         }
 
@@ -85,13 +85,13 @@ def get_preprocessed_cmg_history(dataset_id, tokenizer, split):
     dataset = datasets.load_dataset(dataset_id, split=split)
 
     prompt = (
-        f"Give a short commit message for code from:\n- History commit messages:\n{{vccs}}\n- Git diff:\n{{diff}}\n---\nShort commit message:\n"
+        f"### Câu hỏi:\n{{instruction}}\n\n### Trả lời:\n"
     )
 
     def apply_prompt_template(sample):
         return {
-            "prompt": prompt.format(vccs=sample['author_msgs'], diff=sample["diff"]),
-            "message": sample["msg"],
+            "prompt": prompt.format(instruction=sample["question"]),
+            "message": sample["answer"],
         }
 
     dataset = dataset.map(apply_prompt_template, remove_columns=list(dataset.features))

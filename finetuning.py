@@ -14,8 +14,8 @@ import json
 import argparse
 
 def run(batch_size, load_in_8bit):
-    dataset_id = "zhaospei/cmg-data-v2"
-    model_id = "codellama/CodeLlama-7b-hf"
+    dataset_id = "phamtungthuy/cauhoiphapluat"
+    model_id = "vinai/phobert-base-v2"
 
     tokenizer = AutoTokenizer.from_pretrained(model_id)
 
@@ -24,7 +24,7 @@ def run(batch_size, load_in_8bit):
 
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right" # Fix weird overflow issue with fp16 training
-    train_dataset = get_preprocessed_cmg_history(dataset_id, tokenizer, 'train')
+    train_dataset = get_preprocessed_cmg_history(dataset_id, tokenizer, 'train[:3000]')
 
     # train_dataset = get_preprocessed_dataset(tokenizer, samsum_dataset, 'train')
     # train_dataset = get_preprocessed_samsum(cmg_dataset, tokenizer, 'train')
