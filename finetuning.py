@@ -60,8 +60,8 @@ def finetune(model_name, dataset_id):
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
     
-    train_dataset = load_dataset(dataset_id, split="train")
-    test_dataset = load_dataset(dataset_id, split="test")
+    train_dataset = load_dataset(dataset_id, split="train[:1600]")
+    test_dataset = load_dataset(dataset_id, split="test[:400]")
     train_dataset = preprocess_dataset(train_dataset, tokenizer)
     test_dataset = preprocess_dataset(test_dataset, tokenizer)
     model, lora_config = create_peft_config(model)
