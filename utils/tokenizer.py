@@ -21,7 +21,7 @@ def preprocess_dataset(dataset, tokenizer):
     def tokenize_add_label(sample):
         prompt = tokenizer.encode(tokenizer.bos_token + sample["prompt"], add_special_tokens=False, max_length=500, truncation=True)
         message = tokenizer.encode(sample["message"] +  tokenizer.eos_token, max_length=800, truncation=True, add_special_tokens=False)
-        max_length = 801 - len(prompt) - len(message)
+        max_length = 1301 - len(prompt) - len(message)
         # mx = max(mx, len(prompt) + len(message))
         pad = tokenizer.encode(tokenizer.eos_token, add_special_tokens=False, max_length=max_length, padding='max_length', truncation=True)
 

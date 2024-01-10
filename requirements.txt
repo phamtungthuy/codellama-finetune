@@ -7,3 +7,4 @@ einops
 datasets
 torch
 streamlit
+huggingface_hub
