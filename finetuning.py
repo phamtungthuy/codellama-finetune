@@ -60,16 +60,16 @@ def finetune(model_name, dataset_id):
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
     
-    train_dataset = load_dataset(dataset_id, split="train[:1600]")
-    test_dataset = load_dataset(dataset_id, split="test[:400]")
+    train_dataset = load_dataset(dataset_id, split="train")
+    test_dataset = load_dataset(dataset_id, split="test")
     train_dataset = preprocess_dataset(train_dataset, tokenizer)
     test_dataset = preprocess_dataset(test_dataset, tokenizer)
     model, lora_config = create_peft_config(model)
 
     training_arguments = TrainingArguments(
         output_dir="trained-model",
-        num_train_epochs=0.5,
-        per_device_train_batch_size=1,
+        num_train_epochs=1,
+        per_device_train_batch_size=4,
         gradient_accumulation_steps=2, # 4
         optim="paged_adamw_32bit",
         save_steps=0,
@@ -86,9 +86,11 @@ def finetune(model_name, dataset_id):
         train_dataset=train_dataset,
         eval_dataset=test_dataset,
         data_collator=default_data_collator,
+        tokenizer=tokenizer
     )
     
     trainer.train()
-
+    trainer.model.push_to_hub("phamtungthuy/law-model")
+    trainer.tokenizer.push_to_hub("phamtungthuy/law-model")
 if __name__ == '__main__':
     finetune(model_name="vinai/PhoGPT-7B5-Instruct", dataset_id="phamtungthuy/cauhoiphapluat")
