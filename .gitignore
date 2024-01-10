@@ -5,3 +5,4 @@ tmp/*
 /*.json
 fixing_vcc.1698051913
 run.sh
+output/*

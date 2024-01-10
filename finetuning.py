@@ -92,5 +92,7 @@ def finetune(model_name, dataset_id):
     trainer.train()
     trainer.model.push_to_hub("phamtungthuy/law-model")
     trainer.tokenizer.push_to_hub("phamtungthuy/law-model")
+    trainer.model.save_pretrained("./output")
+    trainer.tokenizer.save_pretrained("./output")
 if __name__ == '__main__':
     finetune(model_name="vinai/PhoGPT-7B5-Instruct", dataset_id="phamtungthuy/cauhoiphapluat")
