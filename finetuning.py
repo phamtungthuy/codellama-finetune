@@ -53,7 +53,7 @@ def finetune(model_name, dataset_id):
     )
 
     model.config.use_cache = False
-
+    model.train()
     tokenizer = AutoTokenizer.from_pretrained(model_name, 
                                             trust_remote_code=True,
                                             )
@@ -61,15 +61,15 @@ def finetune(model_name, dataset_id):
     tokenizer.padding_side = "right"
     
     train_dataset = load_dataset(dataset_id, split="train")
-    test_dataset = load_dataset(dataset_id, split="test")
+    eval_dataset = load_dataset(dataset_id, split="validation")
     train_dataset = preprocess_dataset(train_dataset, tokenizer)
-    test_dataset = preprocess_dataset(test_dataset, tokenizer)
+    eval_dataset = preprocess_dataset(eval_dataset, tokenizer)
     model, lora_config = create_peft_config(model)
 
     training_arguments = TrainingArguments(
         output_dir="trained-model",
         num_train_epochs=1,
-        per_device_train_batch_size=4,
+        per_device_train_batch_size=1,
         gradient_accumulation_steps=2, # 4
         optim="paged_adamw_32bit",
         save_steps=0,
@@ -84,7 +84,7 @@ def finetune(model_name, dataset_id):
         model=model,
         args=training_arguments,
         train_dataset=train_dataset,
-        eval_dataset=test_dataset,
+        eval_dataset=eval_dataset,
         data_collator=default_data_collator,
         tokenizer=tokenizer
     )
@@ -92,7 +92,7 @@ def finetune(model_name, dataset_id):
     trainer.train()
     trainer.model.push_to_hub("phamtungthuy/law-model")
     trainer.tokenizer.push_to_hub("phamtungthuy/law-model")
-    trainer.model.save_pretrained("./output")
-    trainer.tokenizer.save_pretrained("./output")
+    trainer.model.save_pretrained("./trained-model")
+    trainer.tokenizer.save_pretrained("./trained-model")
 if __name__ == '__main__':
-    finetune(model_name="vinai/PhoGPT-7B5-Instruct", dataset_id="phamtungthuy/cauhoiphapluat")
+    finetune(model_name="vinai/PhoGPT-7B5-Instruct", dataset_id="phamtungthuy/cauhoiphapluat_400tokenanswer")

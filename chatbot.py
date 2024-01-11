@@ -55,7 +55,6 @@ if prompt := st.chat_input("Hãy nhập vào yêu cầu?"):
     with st.chat_message("user"):
         st.markdown(prompt)
         
-    st.markdown("Response is rendering...")
     
     input_prompt = PROMPT_TEMPLATE.format_map(
         {"instruction": prompt}
