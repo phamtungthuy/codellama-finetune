@@ -7,3 +7,4 @@ fixing_vcc.1698051913
 run.sh
 output/*
 trained-model/*
+wandb/*

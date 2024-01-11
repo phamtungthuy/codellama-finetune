@@ -1,42 +1,96 @@
 import torch
-from transformers import AutoModelForCausalLM, CodeLlamaTokenizer
-from tqdm import tqdm
+from transformers import (
+    AutoModelForCausalLM, 
+    BitsAndBytesConfig,
+    AutoTokenizer,
+)
 from peft import PeftModel
-import json
+from datasets import load_dataset
+import time
 
-def read_contextual_medit_examples(filename):
-    """Read examples from filename."""
-    examples = []
-    with open(filename, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            js = json.loads(line)
-            examples.append(js['prompt'])
-    return examples
+def create_peft_config(model):
+    from peft import (
+        get_peft_model,
+        LoraConfig,
+        TaskType,
+        prepare_model_for_int8_training
+    )
 
-def write_string_to_file(absolute_filename, string):
-        with open(absolute_filename, 'a') as fout:
-            fout.write(string)
+    peft_config = LoraConfig(
+        task_type=TaskType.CAUSAL_LM,
+        inference_mode=False,
+        r=4,
+        lora_alpha=64,
+        lora_dropout=0.1,
+    )
 
-def gen(model_base, model_peft, input_file, output_file):
-    tokenizer = CodeLlamaTokenizer.from_pretrained(model_base)
+    # prepare int-8 model for training
+    model = get_peft_model(model, peft_config)
+    model.print_trainable_parameters()
+    return model, peft_config
 
-    model = AutoModelForCausalLM.from_pretrained(model_base, load_in_8bit=True, device_map='auto', torch_dtype=torch.float16)
 
+def gen(model_base, model_peft, dataset_id):
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtyp=torch.bfloat16
+    )
+    
+    tokenizer = AutoTokenizer.from_pretrained(model_base)
+
+    model = AutoModelForCausalLM.from_pretrained(
+        model_base,
+        device_map="auto",
+        trust_remote_code=True,
+        load_in_8bit=True,
+        quantization_config=bnb_config, 
+    )
+    
+    model.config.use_cache = False
+    
+    
     model = PeftModel.from_pretrained(model, model_peft)
 
     model.eval()
+    
+    test_dataset = load_dataset(dataset_id, split="train[:10]")
+    PROMPT_TEMPLATE = "### Câu hỏi:\n{instruction}\n\n### Trả lời:" 
+    for row in test_dataset:
+        start=time.time()
+        input_prompt = PROMPT_TEMPLATE.format_map(
+            {"instruction": row['question']}
+        )
+        print(input_prompt)
+        inputs = tokenizer(input_prompt, return_tensors="pt").to("cuda")
+        for _ in range(len(input_prompt)):
+            input_len = inputs["input_ids"].shape[1]
+            with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=False):
+                output = model.generate(  
+                    inputs=inputs["input_ids"].to("cuda"),  
+                    attention_mask=inputs["attention_mask"].to("cuda"),  
+                    do_sample=True,
+                    temperature=1.0,  
+                    top_k=50,  
+                    top_p=0.9,  
+                    max_new_tokens=1,  
+                    eos_token_id=tokenizer.eos_token_id,  
+                    pad_token_id=tokenizer.pad_token_id  
+                )
+            if output[0][-1] == tokenizer.eos_token_id:
+                break
+            response = tokenizer.batch_decode(output[0][input_len:], skip_special_tokens=True)[:1]  
+        #     response = response.split("### Trả lời:")[1]
+            print(''.join(response), end = '')
+            inputs = {
+                "input_ids": output,
+                "attention_mask": torch.ones(1, len(output[0]))
+            }
+        print("total generate answer: ", time.time() - start)
+        break
 
-    examples = read_contextual_medit_examples(input_file)
 
-    for eval_prompt in tqdm(examples):
-        model_input = tokenizer(eval_prompt, return_tensors="pt").to("cuda")
-
-        output = ''
-
-        with torch.no_grad():
-            output = tokenizer.decode(model.generate(**model_input, max_new_tokens=32, pad_token_id=tokenizer.eos_token_id)[0], skip_special_tokens=True)
-        write_string_to_file(output_file, '' + output + '<nl>')
 
 if __name__ == "__main__":
-    gen('codellama/CodeLlama-7b-hf', '/home/dungbt/llama/tmp/code-llama-output', 'test.input.jsonl', 'test.codellama.reload.output')
+    gen('vinai/PhoGPT-7B5-Instruct', 'phamtungthuy/test', "phamtungthuy/cauhoiphapluat_400tokenanswer")

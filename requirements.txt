@@ -8,3 +8,4 @@ datasets
 torch
 streamlit
 huggingface_hub
+wandb

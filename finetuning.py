@@ -13,6 +13,24 @@ from utils.tokenizer import preprocess_dataset
 from contextlib import nullcontext
 import argparse
 from datasets import load_dataset
+import bitsandbytes as bnb
+import wandb
+wandb.login()
+
+
+def find_linear_layers(model):
+    """ find linear layers in given transformer model """
+    lora_module_names = set()
+    for name, module in model.named_modules():
+        # 4 bits for qlora
+        if isinstance(module, bnb.nn.Linear4bit): 
+            names = name.split('.')
+            lora_module_names.add(names[0] if len(names) == 1 else names[-1])
+
+    if 'lm_head' in lora_module_names:
+        lora_module_names.remove('lm_head')
+    print(f"LoRA module names: {list(lora_module_names)}")
+    return list(lora_module_names)
 
 def create_peft_config(model):
     from peft import (
@@ -22,12 +40,16 @@ def create_peft_config(model):
         prepare_model_for_int8_training
     )
 
+    target_modules = find_linear_layers(model)
+
     peft_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
         inference_mode=False,
-        r=4,
+        r=16,
         lora_alpha=64,
         lora_dropout=0.1,
+        bias="none",
+        target_modules=target_modules
     )
 
     # prepare int-8 model for training
@@ -69,7 +91,7 @@ def finetune(model_name, dataset_id):
     training_arguments = TrainingArguments(
         output_dir="trained-model",
         num_train_epochs=1,
-        per_device_train_batch_size=2,
+        per_device_train_batch_size=1,
         gradient_accumulation_steps=2, # 4
         optim="paged_adamw_32bit",
         save_steps=0,
@@ -90,8 +112,8 @@ def finetune(model_name, dataset_id):
     )
     
     trainer.train()
-    trainer.model.push_to_hub("phamtungthuy/law-model")
-    trainer.tokenizer.push_to_hub("phamtungthuy/law-model")
+    trainer.model.push_to_hub("phamtungthuy/test")
+    trainer.tokenizer.push_to_hub("phamtungthuy/test")
     trainer.model.save_pretrained("./trained-model")
     trainer.tokenizer.save_pretrained("./trained-model")
 if __name__ == '__main__':
