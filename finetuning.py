@@ -69,7 +69,7 @@ def finetune(model_name, dataset_id):
     training_arguments = TrainingArguments(
         output_dir="trained-model",
         num_train_epochs=1,
-        per_device_train_batch_size=1,
+        per_device_train_batch_size=8,
         gradient_accumulation_steps=2, # 4
         optim="paged_adamw_32bit",
         save_steps=0,
