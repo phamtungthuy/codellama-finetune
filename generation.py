@@ -55,7 +55,7 @@ def gen(model_base, model_peft, dataset_id):
 
     model.eval()
     
-    test_dataset = load_dataset(dataset_id, split="train[:10]")
+    test_dataset = load_dataset(dataset_id, split="train[2:4]")
     PROMPT_TEMPLATE = "### Câu hỏi:\n{instruction}\n\n### Trả lời:" 
     for row in test_dataset:
         start=time.time()
@@ -88,9 +88,8 @@ def gen(model_base, model_peft, dataset_id):
                 "attention_mask": torch.ones(1, len(output[0]))
             }
         print("total generate answer: ", time.time() - start)
-        break
 
 
 
 if __name__ == "__main__":
-    gen('vinai/PhoGPT-7B5-Instruct', 'phamtungthuy/test', "phamtungthuy/cauhoiphapluat_400tokenanswer")
+    gen('vinai/PhoGPT-7B5-Instruct', 'phamtungthuy/trained_law_model_2', "phamtungthuy/cauhoiphapluat_400tokenanswer")

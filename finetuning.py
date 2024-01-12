@@ -45,11 +45,10 @@ def create_peft_config(model):
     peft_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
         inference_mode=False,
-        r=16,
+        r=4,
         lora_alpha=64,
         lora_dropout=0.1,
-        bias="none",
-        target_modules=target_modules
+        bias="none"
     )
 
     # prepare int-8 model for training
@@ -83,9 +82,7 @@ def finetune(model_name, dataset_id):
     tokenizer.padding_side = "right"
     
     train_dataset = load_dataset(dataset_id, split="train")
-    eval_dataset = load_dataset(dataset_id, split="validation")
     train_dataset = preprocess_dataset(train_dataset, tokenizer)
-    eval_dataset = preprocess_dataset(eval_dataset, tokenizer)
     model, lora_config = create_peft_config(model)
 
     training_arguments = TrainingArguments(
@@ -99,14 +96,14 @@ def finetune(model_name, dataset_id):
         learning_rate=2e-4,
         group_by_length=True,
         logging_strategy="steps",
-        save_strategy="no"
+        save_strategy="no",
+        fp16=True
     )
 
     trainer = Trainer(
         model=model,
         args=training_arguments,
         train_dataset=train_dataset,
-        eval_dataset=eval_dataset,
         data_collator=default_data_collator,
         tokenizer=tokenizer
     )
