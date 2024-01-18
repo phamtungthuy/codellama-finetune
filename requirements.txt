@@ -9,3 +9,11 @@ torch
 streamlit
 huggingface_hub
 wandb
+vllm
+langchain
+xformers
+chromadb
+sentence_transformers
+langchainhub
+elasticsearch==7.13.1
+python-dotenv
