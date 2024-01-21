@@ -21,7 +21,7 @@ from langchain.chains import LLMChain
 from elasticsearch import Elasticsearch
 from langchain.docstore.document import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-
+from time import time
 load_dotenv()
 
 es = Elasticsearch(
@@ -135,7 +135,9 @@ def inference_rag(question):
         {"context": retriever, "question": RunnablePassthrough()}
         | llm_chain
     )
-    
+    time1 = time()
     for chunk in rag_chain.stream(question):
         print(chunk)
+        
+    print("Total generation time: ", time() - time1)
 inference_rag("Điều kiện an toàn về phòng cháy và chữa cháy của quán Karaoke?")
