@@ -8,7 +8,7 @@ from transformers import (
 )
 from dotenv import load_dotenv
 import os
-from transformers import BitsAndBytesConfig
+from transformers import BitsAndBytesConfig, TextStreamer
 
 
 from langchain.embeddings.huggingface import HuggingFaceEmbeddings
@@ -54,6 +54,8 @@ tokenizer = AutoTokenizer.from_pretrained(model_name,
 tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "right"
 
+streamer = TextStreamer(tokenizer)
+
 text_generation_pipeline = pipeline(
     model=model,
     tokenizer=tokenizer,
@@ -64,7 +66,10 @@ text_generation_pipeline = pipeline(
     repetition_penalty=1.1,
     return_full_text=True,
     max_new_tokens=1000,
-    do_sample=True
+    do_sample=True,
+    streamer=streamer,
+    eos_token_id=tokenizer.eos_token_id,
+    pad_token_id=tokenizer.pad_token_id
 )
 
 llm = HuggingFacePipeline(pipeline=text_generation_pipeline)
@@ -123,6 +128,6 @@ def inference_rag(question):
         | llm_chain
     )
     
-    answer = rag_chain.invoke(question)
-    print(answer)
-inference_rag("Quyền và nghĩa vụ của Kiểm soát viên trong công ty đại chúng là gì?")
+    for chunk in rag_chain.stream(question):
+        print(chunk)
+inference_rag("Điều kiện an toàn về phòng cháy và chữa cháy của quán Karaoke?")
