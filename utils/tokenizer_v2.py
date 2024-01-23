@@ -5,12 +5,12 @@ def preprocess_dataset(dataset, tokenizer):
 #     dataset = datasets.load_dataset(dataset_id, split=split)
     
     prompt = (
-        f"### Câu hỏi:\n{{question}}\n\n### Trả lời:\n"
+        f"###Lĩnh vực: {{field}}\n###Văn bản liên quan: {{relevant}}\n###Thời gian đặt câu hỏi: {{time}}\n### Câu hỏi:\n{{question}}\n\n### Trả lời:\n"
     )
     
     def apply_prompt_template(sample):
         return {
-            "prompt": prompt.format(field=sample["field"], question=sample["question"]),
+            "prompt": prompt.format(field=sample["field"], relevant=sample["relevant"], time=sample['time'], question=sample["question"]),
             "message": sample["answer"],
         }
 
