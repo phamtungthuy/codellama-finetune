@@ -4,7 +4,9 @@ from transformers import (
     AutoModelForCausalLM, 
     BitsAndBytesConfig,
     AutoTokenizer,
-    pipeline
+    pipeline,
+    StoppingCriteria,
+    StoppingCriteriaList
 )
 from dotenv import load_dotenv
 import os
@@ -54,7 +56,14 @@ tokenizer = AutoTokenizer.from_pretrained(model_name,
 tokenizer.pad_token = tokenizer.eos_token
 tokenizer.padding_side = "right"
 
-streamer = TextStreamer(tokenizer)
+class StopOnTokens(StoppingCriteria):
+    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
+        text = tokenizer.batch_decode(input_ids, skip_special_tokens=True)[0]
+        text = text.split("\nHãy trả lời câu hỏi:")[1]
+        print(text)
+        return False
+stopping_criteria = StoppingCriteriaList([StopOnTokens()])
+
 
 text_generation_pipeline = pipeline(
     model=model,
@@ -67,7 +76,6 @@ text_generation_pipeline = pipeline(
     return_full_text=True,
     max_new_tokens=1000,
     do_sample=True,
-    streamer=streamer,
     eos_token_id=tokenizer.eos_token_id,
     pad_token_id=tokenizer.pad_token_id
 )
@@ -114,6 +122,7 @@ def inference_rag(question):
     retriever = db.as_retriever()
     
     prompt_template = """
+    Dựa vào văn bản sau đây:\n{context}\nHãy trả lời câu hỏi: {question}
     """
     
     prompt = PromptTemplate(

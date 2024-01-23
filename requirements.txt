@@ -17,3 +17,4 @@ sentence_transformers
 langchainhub
 elasticsearch==7.13.1
 python-dotenv
+faiss-gpu
